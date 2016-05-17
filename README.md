@@ -1,1 +1,1 @@
-# EIP_Session
+Enterprise integration pattern presentation
