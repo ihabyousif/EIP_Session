@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:jms="http://www.springframework.org/schema/integration/jms"
+	xmlns:integration="http://www.springframework.org/schema/integration"
+	xmlns:int-file="http://www.springframework.org/schema/integration/file"
+	xmlns:int-http="http://www.springframework.org/schema/integration/http"
+	xmlns:int-sftp="http://www.springframework.org/schema/integration/sftp"
+	xsi:schemaLocation="http://www.springframework.org/schema/jms http://www.springframework.org/schema/jms/spring-jms-4.2.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/integration/file http://www.springframework.org/schema/integration/file/spring-integration-file-4.2.xsd
+		http://www.springframework.org/schema/integration/jms http://www.springframework.org/schema/integration/jms/spring-integration-jms.xsd
+		http://www.springframework.org/schema/integration/http http://www.springframework.org/schema/integration/http/spring-integration-http-4.2.xsd
+		http://www.springframework.org/schema/integration/sftp http://www.springframework.org/schema/integration/sftp/spring-integration-sftp.xsd">
+ 
+    <!-- Process Jms Orders -->
+    <jms:message-driven-channel-adapter id="jmsAdapater" destination="orderJMSQueue"
+       connection-factory="jmsConnectionFactory"  channel="jmsReceiveChannel"/>
+    <integration:service-activator id="ValidateJmsOrderServiceActivator" ref="validateOrderService" method="validateJmsOrder" input-channel="jmsReceiveChannel"/>
+    
+    <!-- Global channels -->
+    <integration:channel id="jmsReceiveChannel"/>
+    
+    <integration:channel id="httpOrderChannel"/>
+ 
+    <integration:channel id="fileOrderChannel"/>
+
+    <integration:channel id="httpTojmsChannel"/>
+    
+    <!-- Process Http Orders -->
+    <int-http:inbound-channel-adapter channel="httpOrderChannel" path="/addHttpOrder/*"></int-http:inbound-channel-adapter>   
+    <integration:service-activator id="ValidateHttpOrderServiceActivator" ref="validateOrderService" method="validateHttpOrder" input-channel="httpOrderChannel"/>
+      
+    <!-- Process file Orders -->                       
+    <int-file:inbound-channel-adapter directory="/Users/ihab/inputfile/orderFiles" id="file-reader" channel="fileOrderChannel" >
+    <integration:poller fixed-rate="5000"  />
+    </int-file:inbound-channel-adapter>
+    <integration:service-activator id="ValidateFileOrderServiceActivator" ref="validateOrderService" method="validateFileOrder" input-channel="fileOrderChannel"/>
+    
+    
+    <!-- test send to jms Queue Orders from http -->
+    <int-http:inbound-channel-adapter channel="httpTojmsChannel" path="/addJmsOrder/*"></int-http:inbound-channel-adapter>
+    <jms:outbound-channel-adapter connection-factory="jmsConnectionFactory" channel="httpTojmsChannel" destination="orderJMSQueue"></jms:outbound-channel-adapter>
+</beans>
+   
+    
+    
